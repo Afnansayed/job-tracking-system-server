@@ -15,3 +15,5 @@ export interface  ICreateJob {
     notes?:           string
 }
 
+export type IUpdateJob = Partial<ICreateJob>;
+

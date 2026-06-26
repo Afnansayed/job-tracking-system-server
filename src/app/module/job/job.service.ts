@@ -1,20 +1,67 @@
 import status from "http-status";
 import { IRequestUser } from "../../interfaces/request.interface";
 import { prisma } from "../../lib/prisma";
-import { ICreateJob } from "./job.interface";
+import { ICreateJob, IUpdateJob } from "./job.interface";
 import AppError from "../../errorHelpers/AppError";
 import { Role } from "../../../generated/prisma/browser";
 
 const createJob = async (payload: ICreateJob, userId: string) => {
   const result = await prisma.job.create({
     data: {
+      ...payload,
       applicationDate: payload?.applicationDate
         ? new Date(payload.applicationDate)
         : undefined,
-      ...payload,
       userId,
     },
   });
+  return result;
+};
+
+const updateJob = async (
+  jobId: string,
+  payload: IUpdateJob,
+  user: IRequestUser,
+) => {
+    
+  if (Object.keys(payload).length === 0) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "At least one field is required to update.",
+    );
+  }
+  const job = await prisma.job.findUnique({
+    where: {
+      id: jobId,
+    },
+    select: {
+      userId: true,
+    },
+  });
+
+  if (!job) {
+    throw new AppError(status.NOT_FOUND, "Job not found");
+  }
+
+  if (user.role !== Role.ADMIN && job.userId !== user.id) {
+    throw new AppError(
+      status.FORBIDDEN,
+      "You are not authorized to update this job",
+    );
+  }
+
+  const result = await prisma.job.update({
+    where: {
+      id: jobId,
+    },
+    data: {
+      ...payload,
+      applicationDate: payload.applicationDate
+        ? new Date(payload.applicationDate)
+        : undefined,
+    },
+  });
+
   return result;
 };
 
@@ -88,7 +135,7 @@ const getJobById = async (jobId: string, user: IRequestUser) => {
   }
 
   return job;
-}
+};
 
 const deleteJob = async (jobId: string, user: IRequestUser) => {
   const isValidUser = await prisma.user.findUnique({
@@ -103,18 +150,17 @@ const deleteJob = async (jobId: string, user: IRequestUser) => {
       "User not found , please login again",
     );
 
-    return prisma.job.delete({
-      where: {
-        id: jobId,
-      },
-    });
+  return prisma.job.delete({
+    where: {
+      id: jobId,
+    },
+  });
 };
-
-
 
 export const jobService = {
   createJob,
   getAllJobs,
   deleteJob,
-  getJobById
+  getJobById,
+  updateJob,
 };

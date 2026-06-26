@@ -18,6 +18,20 @@ const createJob = catchAsync(async (req: Request, res: Response) => {
       });
 });
 
+const updateJob = catchAsync(async (req: Request, res: Response) => {
+    const user = req.user!;
+    const jobId = req.params.id as string;
+
+    const result = await jobService.updateJob(jobId , req.body , user);
+
+    sendResponse(res, {
+        httpStatusCode:  status.OK,
+        success: true,
+        message: "Job updated successfully",
+        data: result,
+      });
+});
+
 const getAllJobs = catchAsync(async (req: Request, res: Response) => {
       const user = req.user!;
 
@@ -63,6 +77,7 @@ export const jobController = {
   createJob,
   getAllJobs,
   getJobById,
+  updateJob,
   deleteJob
 };
 

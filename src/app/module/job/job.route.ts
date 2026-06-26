@@ -11,6 +11,7 @@ const router:Router = Router();
 router.get("/", checkAuth(Role.USER , Role.ADMIN), jobController.getAllJobs);
 router.get("/:id", checkAuth(Role.USER , Role.ADMIN), jobController.getJobById);
 router.post("/", checkAuth(Role.USER , Role.ADMIN), validateRequest(createJobValidation), jobController.createJob);
+router.patch("/:id", checkAuth(Role.USER , Role.ADMIN), validateRequest(createJobValidation.partial()), jobController.updateJob);
 router.delete("/:id", checkAuth(Role.USER , Role.ADMIN), jobController.deleteJob);
 
 export const jobRoutes = router;
