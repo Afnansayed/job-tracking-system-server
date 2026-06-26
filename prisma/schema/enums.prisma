@@ -8,3 +8,23 @@ enum UserStatus {
     DELETED
     ACTIVE
 }
+
+enum JobTaskStatus {
+    NOT_YET
+    STARTED
+    COMPLETED
+    SKIPPED
+}
+
+enum ResponseStatus {
+    NO
+    YES
+}
+
+enum Platform {
+    LINKEDIN
+    FACEBOOK
+    DISCORD
+    BDJOBS
+    OTHER
+}

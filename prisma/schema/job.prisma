@@ -1,0 +1,24 @@
+model Job {
+    id   String @id @default(uuid(7))
+    applicationDate DateTime @default(now())
+    companyName String
+    companyWebsite String?
+    email String?
+    response   ResponseStatus @default(NO)
+    jobTaskStatus  JobTaskStatus @default(NOT_YET)
+    platform         Platform @default(LINKEDIN)
+    position String
+    location String?
+    jobPostingUrl String?
+    notes String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    userId String
+    user  User @relation(fields: [userId], references:[id], onDelete: Cascade)
+
+    @@map("job")
+    @@index([userId])
+    @@index([applicationDate])
+}
