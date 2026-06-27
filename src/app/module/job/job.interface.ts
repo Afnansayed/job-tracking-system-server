@@ -17,3 +17,9 @@ export interface  ICreateJob {
 
 export type IUpdateJob = Partial<ICreateJob>;
 
+export  interface IJobFilters {
+    searchTerm?: string;
+    response?: ResponseStatus;
+    jobTaskStatus?: JobTaskStatus;
+    platform?: Platform;
+}

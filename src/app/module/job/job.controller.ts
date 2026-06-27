@@ -3,6 +3,7 @@ import { catchAsync } from "../../shared/catchAsync";
 import { jobService } from "./job.service";
 import { sendResponse } from "../../shared/sendResponse";
 import status from "http-status";
+import { JobTaskStatus, Platform, ResponseStatus } from "../../../generated/prisma/client";
 
 
 const createJob = catchAsync(async (req: Request, res: Response) => {
@@ -34,13 +35,20 @@ const updateJob = catchAsync(async (req: Request, res: Response) => {
 
 const getAllJobs = catchAsync(async (req: Request, res: Response) => {
       const user = req.user!;
+
+      const filters = {
+              searchTerm: req.query.searchTerm as string,
+              response: req.query.response as ResponseStatus,
+              jobTaskStatus: req.query.jobTaskStatus as JobTaskStatus,
+              platform: req.query.platform as Platform
+      }
       const options = {
         page: Number(req.query.page),
         limit: Number(req.query.limit),
         sortBy: req.query.sortBy as string,
         sortOrder: req.query.sortOrder as "asc" | "desc"
       }
-      const result = await jobService.getAllJobs(user, options);
+      const result = await jobService.getAllJobs(user, options, filters);
 
       sendResponse(res, {
         httpStatusCode:  status.OK,

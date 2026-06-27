@@ -1,9 +1,9 @@
 import status from "http-status";
 import { IRequestUser } from "../../interfaces/request.interface";
 import { prisma } from "../../lib/prisma";
-import { ICreateJob, IUpdateJob } from "./job.interface";
+import { ICreateJob, IJobFilters, IUpdateJob } from "./job.interface";
 import AppError from "../../errorHelpers/AppError";
-import { Role } from "../../../generated/prisma/browser";
+import { Prisma, Role } from "../../../generated/prisma/client";
 import { IPaginationOptions } from "../../interfaces/pagination.interface";
 import { calculatePagination } from "../../helperFn/calculatePagination";
 
@@ -69,10 +69,9 @@ const updateJob = async (
 const getAllJobs = async (
   user: IRequestUser,
   paginationOptions: IPaginationOptions,
+  filters: IJobFilters
 ) => {
-  const { page, limit, skip, sortBy, sortOrder } =
-    calculatePagination(paginationOptions);
-  //    if user is admin, return all jobs, else return only jobs for the user
+      //    if user is admin, return all jobs, else return only jobs for the user
   const isValidUser = await prisma.user.findUnique({
     where: {
       id: user.id,
@@ -89,7 +88,38 @@ const getAllJobs = async (
       "User not found , please login again",
     );
 
-  const where = isValidUser.role === Role.ADMIN ? {} : { userId: isValidUser.id };
+  const { page, limit, skip, sortBy, sortOrder } =
+    calculatePagination(paginationOptions);
+
+  const whereConditions: Prisma.JobWhereInput[] = [];  
+  
+  if(isValidUser.role !== Role.ADMIN) {
+    whereConditions.push({
+      userId: isValidUser.id,
+    });
+  }
+  
+  if (filters.searchTerm) {
+    whereConditions.push({
+      OR: [
+        { companyName: { contains: filters.searchTerm, mode: "insensitive" } },
+        { position: { contains: filters.searchTerm, mode: "insensitive" } },
+        { location: { contains: filters.searchTerm, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  const filterFields = ["response", "jobTaskStatus", "platform"] as const;
+
+  filterFields.forEach(field => {
+       if(filters[field]){
+        whereConditions.push({
+            [field]: filters[field]
+        })
+       }
+  })
+
+ const where: Prisma.JobWhereInput = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
   const queryOptions =
     isValidUser.role === Role.ADMIN
