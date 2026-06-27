@@ -34,8 +34,13 @@ const updateJob = catchAsync(async (req: Request, res: Response) => {
 
 const getAllJobs = catchAsync(async (req: Request, res: Response) => {
       const user = req.user!;
-
-      const result = await jobService.getAllJobs(user);
+      const options = {
+        page: Number(req.query.page),
+        limit: Number(req.query.limit),
+        sortBy: req.query.sortBy as string,
+        sortOrder: req.query.sortOrder as "asc" | "desc"
+      }
+      const result = await jobService.getAllJobs(user, options);
 
       sendResponse(res, {
         httpStatusCode:  status.OK,

@@ -4,6 +4,8 @@ import { prisma } from "../../lib/prisma";
 import { ICreateJob, IUpdateJob } from "./job.interface";
 import AppError from "../../errorHelpers/AppError";
 import { Role } from "../../../generated/prisma/browser";
+import { IPaginationOptions } from "../../interfaces/pagination.interface";
+import { calculatePagination } from "../../helperFn/calculatePagination";
 
 const createJob = async (payload: ICreateJob, userId: string) => {
   const result = await prisma.job.create({
@@ -23,7 +25,6 @@ const updateJob = async (
   payload: IUpdateJob,
   user: IRequestUser,
 ) => {
-    
   if (Object.keys(payload).length === 0) {
     throw new AppError(
       status.BAD_REQUEST,
@@ -65,11 +66,20 @@ const updateJob = async (
   return result;
 };
 
-const getAllJobs = async (user: IRequestUser) => {
+const getAllJobs = async (
+  user: IRequestUser,
+  paginationOptions: IPaginationOptions,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    calculatePagination(paginationOptions);
   //    if user is admin, return all jobs, else return only jobs for the user
   const isValidUser = await prisma.user.findUnique({
     where: {
       id: user.id,
+    },
+    select: {
+        id: true,
+        role: true,
     },
   });
 
@@ -79,9 +89,10 @@ const getAllJobs = async (user: IRequestUser) => {
       "User not found , please login again",
     );
 
-  const where = user.role === Role.ADMIN ? {} : { userId: user.id };
+  const where = isValidUser.role === Role.ADMIN ? {} : { userId: isValidUser.id };
+
   const queryOptions =
-    user.role === Role.ADMIN
+    isValidUser.role === Role.ADMIN
       ? {
           include: {
             user: {
@@ -95,13 +106,27 @@ const getAllJobs = async (user: IRequestUser) => {
         }
       : undefined;
 
-  return prisma.job.findMany({
-    where,
-    ...queryOptions,
-    orderBy: {
-      applicationDate: "desc",
+  const [jobs, total] = await Promise.all([
+    prisma.job.findMany({
+      where,
+      ...queryOptions,
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      skip,
+      take: limit,
+    }),
+    prisma.job.count({ where }),
+  ]);
+
+  return {
+    meta: {
+      page: page,
+      limit: limit,
+      total,
     },
-  });
+    data: jobs,
+  };
 };
 
 const getJobById = async (jobId: string, user: IRequestUser) => {
